@@ -1,0 +1,41 @@
+module adder (
+//inputs from the ALU
+    input alufn[6],
+    input a[16],  
+    input b[16],  
+//outputs to the ALU   
+    output sum1[16],
+    output z,
+    output v, 
+    output n,
+    output overflow
+  ) {
+sig ssum[17]; //variable for calculating v and n
+sig sum[17]; //variable for calculating output
+  
+  always {
+    case(alufn[1:0]){ //alufn value controlling add or subtract operator
+    b00:
+      ssum = a-b;
+      sum = a+b; //addition
+    b01:
+      ssum = a-b;
+      sum = a-b; //subtraction
+    b10:
+      ssum = a-b;
+      sum = a*b; // multiplication
+    b11:
+      ssum = a-b;
+      sum = a-(a/b*b); // modulo
+    default:
+      ssum=a-b;
+      sum = a+b;
+  }
+    //assigning values to outputs
+    overflow = (a[15] & b[15] & (~sum[15])) | ((~a[15])&(~b[15])&sum[15]);
+    sum1 = sum[15:0]; 
+    v = (a[15] & ~b[15] & (~ssum[15])) | ((~a[15])&(b[15])&ssum[15]);
+    n = ssum[15];
+    z = ~|ssum;
+  }
+}

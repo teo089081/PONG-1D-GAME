@@ -1,0 +1,87 @@
+module stateCounter (
+    input clk,  // clock
+    input rst,  // reset
+    input btn,
+    input btn1,
+    input btn2,
+    input btn3,
+    output inc_state,
+    output dec_state,
+    output inc1_state,
+    output dec1_state,
+    output updateball,
+    input ballspd[28],
+    output updatespd
+    
+ 
+  ) {
+
+  dff stateCounter[28](.clk(clk),.rst(rst));
+  dff stateCounter1[28](.clk(clk),.rst(rst));
+  dff stateCounter2[28](.clk(clk),.rst(rst));
+  dff stateCounter3[28](.clk(clk),.rst(rst));
+  dff gameball[28](.clk(clk),.rst(rst));
+  dff time[5](.clk(clk),.rst(rst));
+  dff limit[32](.clk(clk),.rst(rst));
+  
+  always { //count increment
+  time.d=17;
+  gameball.d = gameball.q + 1;
+  if (gameball.q==ballspd) {
+    gameball.d = 0; //count timer reset
+    updateball = 1;
+  }
+  else updateball=0;
+    
+  if (limit.q==50000000) {        //1sec
+    limit.d = 0;
+    updatespd = 1;
+  }
+  else updatespd=0;
+    
+  if (btn==1){
+    inc_state = stateCounter.q[time.q];
+    stateCounter.d = stateCounter.q + 1;
+    if (stateCounter.q[time.q]==1) {
+      stateCounter.d[time.q] = 0; //count timer reset
+    }
+    }
+    else{
+    stateCounter.d = 0;
+    inc_state = stateCounter.q[0];
+    }
+   if (btn1==1){
+    dec_state = stateCounter1.q[time.q];
+    stateCounter1.d = stateCounter1.q + 1;
+    if (stateCounter1.q[time.q]==1) {
+      stateCounter1.d[time.q] = 0; //count timer reset
+    }
+    }
+    else{
+    stateCounter1.d = 0;
+    dec_state = stateCounter1.q[0];
+    }
+  if (btn2==1){
+    inc1_state = stateCounter2.q[time.q];
+    stateCounter2.d = stateCounter2.q + 1;
+    if (stateCounter2.q[time.q]==1) {
+      stateCounter2.d[time.q] = 0; //count timer reset
+    }
+    }
+    else{
+    stateCounter2.d = 0;
+    inc1_state = stateCounter2.q[0];
+    }
+   if (btn3==1){
+    dec1_state = stateCounter3.q[time.q];
+    stateCounter3.d = stateCounter3.q + 1;
+    if (stateCounter3.q[time.q]==1) {
+      stateCounter3.d[time.q] = 0; //count timer reset
+    }
+    }
+    else{
+    stateCounter3.d = 0;
+    dec1_state = stateCounter3.q[0];
+    }
+  }
+}

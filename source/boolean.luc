@@ -1,0 +1,28 @@
+module boolean (
+//inputs from ALU
+    input alufn[6],
+    input a[16],  
+    input b[16],  
+//output to ALU
+    output boole[16]
+  ) {
+var i; //index for each individual bit
+var mulselector; //2bit selector of b and a
+  always {
+    for (i=0; i<16; i++){//start from 0 bit to 15 bit
+      mulselector = b[i]*2 +a[i]; 
+    case(mulselector){ 
+      b00:
+      boole[i]=alufn[0]; 
+      b01:
+      boole[i] = alufn[1];
+      b10:
+      boole[i] = alufn[2]; 
+      b11:
+      boole[i]= alufn[3]; 
+      default:
+      boole[i]=alufn[0];
+      }
+    }
+  }
+}

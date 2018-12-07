@@ -1,0 +1,218 @@
+module vga (
+    input clk,  // clock
+    input rst,  // reset
+    output red,
+    output blue,
+    output green,
+    output hsync,
+    output vsync,
+    input up,
+    input down,
+    input up1,
+    input down1,
+    output displayp11[4], //player 1 1st digit
+    output displayp12[4], //player 1 2nd digit
+    output displayp21[4], //player 2 1st digit
+    output displayp22[4]  //player 2 2nd digit
+  ) {
+  .clk(clk) {
+  
+    .rst(rst){
+    dff pixel[11];
+    dff line[11];
+    dff player1[11] (#INIT(300));
+    dff player2[11] (#INIT(300));
+    dff ballX[11] (#INIT(400));
+    dff ballY[11] (#INIT(300));
+    dff ballDirX[1] (#INIT(1));
+    dff ballDirY[1] (#INIT(1));
+    dff ballspeed[28] (#INIT(500000));
+    dff tmr[4];
+    dff p11score[4];
+    dff p12score[4];
+    dff p21score[4];
+    dff p22score[4];
+    dff alufn[6];
+    dff a[16];
+    dff b[16];
+    stateCounter stateCounter1(.btn(up),.btn1(down),.btn2(up1),.btn3(down1));
+    }
+  }
+  alu alumod(.alufn(alufn.q),.a(a.q),.b(b.q));
+  var border;
+  var bordersize;
+  var padsize;
+  var mid_line;
+  var p1;
+  var p2;
+  var ball;
+  var ball_inX;
+  var ball_inY;
+  var bouncingObject;
+  sig collisionX1, collisionX2, collisionY1, collisionY2,collisionX3,collisionX4;
+  var updateballpos;
+  
+  always {
+  bordersize=10;
+  padsize=50;
+  displayp11=p11score.q;
+  displayp12=p12score.q;
+  displayp21=p21score.q;
+  displayp22=p22score.q;
+  if(stateCounter1.updatespd==1){  if(tmr.q>20) tmr.d=tmr.q; else tmr.d = tmr.q+1;}
+  ballspeed.d=250000-(5000*tmr.q);
+  stateCounter1.ballspd=ballspeed.q;
+  border = (pixel.q>(800-bordersize))||(pixel.q<bordersize)||(line.q>(600-bordersize))||(line.q<bordersize);    //border
+  mid_line = (pixel.q>398)&&(pixel.q<400);    //mid_line
+  if((player1.q>(600-bordersize-padsize))){                                            //player 1 border
+      alufn.d=6b1;
+      a.d=600;
+      b.d=bordersize+padsize;
+      player1.d = alumod.alu[10:0];
+      //player1.d = 600-bordersize-padsize;
+      }
+      else if((player1.q<(bordersize+padsize))){
+      alufn.d=6b0;
+      a.d=bordersize+padsize;
+      b.d=1;
+      player1.d = alumod.alu[10:0];
+      //player1.d = bordersize+padsize+1;
+      }
+      else{
+      if(stateCounter1.inc_state==1){
+      player1.d = player1.q + 1;
+        }
+      else if(stateCounter1.dec_state==1){
+      player1.d = player1.q - 1;
+        }
+      }
+  if((player2.q>(600-bordersize-padsize))){                                            //player 2 border
+      alufn.d=6b1;
+      a.d=600;
+      b.d=bordersize+padsize;
+      player2.d = alumod.alu[10:0];
+      //player2.d = 600-bordersize-padsize;
+      }
+      else if((player2.q<(bordersize+padsize))){
+      alufn.d=6b0;
+      a.d=bordersize+padsize;
+      b.d=1;
+      player2.d = alumod.alu[10:0];
+      //player2.d = bordersize+padsize+1;
+      }
+      else{
+      if(stateCounter1.inc1_state==1){
+      player2.d = player2.q + 1;
+        }
+      else if(stateCounter1.dec1_state==1){
+      player2.d = player2.q - 1;
+        }
+      }  
+  p1 = (pixel.q>20)&&(pixel.q<30)&&(line.q>(player1.q-padsize))&&(line.q<(player1.q+padsize)); //player1 pad
+  p2 = (pixel.q>770)&&(pixel.q<780)&&(line.q>(player2.q-padsize))&&(line.q<(player2.q+padsize)); //player2 pad
+    
+
+    
+    //display
+    if (pixel.q < 800 && line.q < 600) {
+
+    if(ballX.q==0 && ballY.q==0){
+      ballX.d =400;
+      ballY.d =300;
+      ballspeed.d=500000;
+      }
+     ball_inX=ballX.q+20;
+     ball_inY=ballY.q+20;
+    ball = (pixel.q>ballX.q)&&(pixel.q<(ball_inX))&&(line.q>ballY.q)&&(line.q<(ball_inY));
+
+    bouncingObject = border|p1|p2;
+    
+    
+    collisionX1 = ((ballX.q==10)); //left collision
+    collisionX2 = ((ball_inX==790)); //right collision
+    collisionX3 = ((ballX.q==30)&((ball_inY>(player1.q-padsize))&(ballY.q<(player1.q+padsize)))); //p1 collision
+    collisionX4 = ((ball_inX==770)&((ball_inY>(player2.q-padsize))&(ballY.q<(player2.q+padsize)))); //p2 collision
+    collisionY1 = ((ballY.q==10)); //top collision
+    collisionY2 = ((ball_inY==590)); //bot collision
+        
+        if(collisionX1){
+          ballX.d =400;
+          ballY.d =300;
+          if(p22score.q>8){ p22score.d=0;p21score.d=p21score.q+1;} else p22score.d=p22score.q+1;
+          if(p21score.q==10) p21score.d=0;
+        }
+        if(collisionX2){
+          ballX.d =400;
+          ballY.d =300;
+          if(p12score.q>8){ p12score.d=0;p11score.d=p11score.q+1;} else p12score.d=p12score.q+1;
+          if(p11score.q==10) p11score.d=0;                 
+        }
+        if(collisionX3){
+          ballDirX.d=1;
+        }
+        if(collisionX4){
+          ballDirX.d=0;
+        }
+        if(collisionY1){
+          ballDirY.d=1;
+        }
+        if(collisionY2){
+          ballDirY.d=0;
+        }
+      
+    updateballpos = stateCounter1.updateball;
+    
+    if(updateballpos)
+      { 
+        if(ballDirX.q){
+          ballX.d = ballX.q + 1; //move right
+        }
+        else{
+          ballX.d = ballX.q - 1; //move left
+        }
+        if(ballDirY.q){
+          ballY.d = ballY.q + 1; //move down
+        }
+        else{
+          ballY.d = ballY.q - 1; //move up
+        }
+      }        
+      
+      
+      red = border|mid_line|p1|p2;
+      green = border|mid_line|ball;
+      blue = border|mid_line;
+  } else {
+    // always output 0 outside the visible frame
+    red = 0;
+    green = 0;
+    blue = 0;
+  }
+
+  // horizontal sync
+  if (pixel.q >= 800+56-1 && pixel.q <= 800+56-1+119) {
+    hsync = 1;
+  } else {
+    hsync = 0;
+  }
+
+  // vertical refresh
+  if (line.q >= 600+37-1 && line.q <= 600+37-1+5) {
+    vsync = 1;
+  } else {
+    vsync = 0;
+  }
+
+  // advance pixel and line counters
+  if (pixel.q == 800+56+120+64-1) {
+    if (line.q == 600+37+6+23-1) {
+      line.d = 0;
+    } else {
+      line.d = line.q + 1;
+    }
+    pixel.d = 0;
+  } else {
+    pixel.d = pixel.q + 1;
+  }
+  }
+}
